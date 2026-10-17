@@ -1,339 +1,93 @@
-# yunseongApps Monorepo
+# yunseongApps
 
-Android 멀티 앱 모노레포 프로젝트
+Android 앱 6개와 Firebase 백엔드, React 웹을 한 저장소에서 관리하는 모노레포의 공개 문서 저장소입니다.
+소스 저장소는 비공개이며, 이 저장소는 구조·설계 결정·모듈 책임을 설명하는 문서만 담습니다.
 
-## 프로젝트 구조
+## 한눈에 보기
+
+- 앱 6개: Lottomate, Lunar, QRScanner, Diding, Moduta, Fxrate
+- Gradle 모듈 135개 (shared core·feature 모듈과 앱 전용 core·feature 모듈 포함)
+- Clean Architecture + Modular Architecture, 의존 방향은 `apps → shared/feature → shared/core` 단방향
+- 계층 규칙·화면 모듈 규격·앱 모듈 모양을 문서가 아니라 빌드(Convention Plugin의 Guard)가 강제
+- 기술 스택: Kotlin 2.2.10, AGP 9.0.1, Compose BOM 2025.02.00, Hilt 2.56.2, Room 2.7.0-alpha12
+- SDK: minSdk 29, targetSdk 36, compileSdk 36, Java 17
+
+## 앱 현황
+
+| 앱 | 한 줄 소개 | 패키지 | Flavor | 문서 |
+|----|-----------|--------|--------|------|
+| Lottomate | 로또 번호 관리, 당첨 확인, 통계, 당첨 푸시 알림 | `com.yunseong.lottomate` | dev / prod | [apps/lottomate](apps/lottomate/README.md) |
+| Lunar | 달 위상 대시보드와 달력, 달 이벤트 알림 | `com.yun.lunarphase` | dev / prod | [apps/lunar](apps/lunar/README.md) |
+| QRScanner (Q-Ring) | QR 다중 스캔, 생성, 이력 | `com.yunseong.qring` | dev / prod | [apps/qrscanner](apps/qrscanner/README.md) |
+| Diding | 알람 기반 TODO·일정 관리 | `com.yunseong.diding` | dev / prod | [apps/diding](apps/diding/README.md) |
+| Moduta | 서울시 버스 실시간 정보와 지도 | `com.yunseong.moduta` | dev / prod | [apps/moduta](apps/moduta/README.md) |
+| Fxrate | 환율 조회와 임계값 알림, 홈 위젯 | `com.yunseong.fxrate` | dev / prod | [apps/fxrate](apps/fxrate/README.md) |
+
+6개 앱 모두 dev/prod 환경 flavor를 갖습니다. 앱 모듈에는 조립 코드(Application, MainActivity, 내비게이션, DI 바인딩)만 두고,
+기능은 `apps/<앱>/core`, `apps/<앱>/feature` 하위 모듈에 둡니다.
+
+## 모듈 구성
 
 ```
 yunseongApps/
-├── apps/                         # 앱 모듈
-│   ├── lottomate/               # Lottomate Android 앱
-│   ├── lunar/                   # LunarPhase Android 앱
-│   ├── qrscanner/               # QR Scanner Android 앱
-│   ├── diding/                  # Diding Android 앱
-│   └── moduta/                  # Moduta Android 앱 (서울시 버스)
-│
+├── apps/                  앱 6개 (각 앱은 조립 모듈 + core/feature 하위 모듈)
 ├── shared/
-│   ├── feature/                  # Shared Feature 모듈 (16개)
-│   │   ├── qr/                  # QR feature 모듈
-│   │   │   ├── common/
-│   │   │   ├── scanner/
-│   │   │   ├── multi-scanner/
-│   │   │   └── generator/
-│   │   ├── lock/                # 앱 잠금 feature
-│   │   ├── oss-licenses/        # 오픈소스 라이선스
-│   │   ├── app-update/          # 앱 업데이트 안내
-│   │   ├── chart/               # 차트 컴포넌트
-│   │   ├── image-picker/        # 이미지 선택
-│   │   ├── image-saver/         # 이미지 저장
-│   │   ├── notification-inbox/  # 알림 수신함
-│   │   ├── notification-settings/ # 알림 설정
-│   │   ├── seoul-bus/           # 서울시 버스 실시간 정보
-│   │   ├── share/               # 공유 기능
-│   │   ├── social-login/        # 소셜 로그인
-│   │   └── webview/             # 웹뷰
-│   │
-│   └── core/                    # Shared Core 모듈 (28개, infrastructure)
-│       ├── common/              # 공통 인프라
-│       │   ├── admob/           # AdMob 통합
-│       │   ├── database/        # Room 기본 설정
-│       │   ├── designsystem/    # Material 3 테마
-│       │   ├── location-provider/ # 위치 제공자
-│       │   ├── network/         # 네트워크 설정
-│       │   └── ui/              # UI 컴포넌트
-│       ├── firebase/            # Firebase 통합
-│       │   ├── auth/
-│       │   ├── core/
-│       │   ├── crashlytics/
-│       │   ├── firestore/
-│       │   ├── messaging/
-│       │   └── remote-config/
-│       ├── fundamental/         # 기반 기능
-│       │   ├── alarm/
-│       │   ├── common/
-│       │   ├── local-notification/
-│       │   └── permission/
-│       ├── lunar/               # 달 관련 공통
-│       │   └── calculator/
-│       └── permissions/         # 런타임 권한 (11개)
-│           ├── permission-core/
-│           ├── permission-camera/
-│           ├── permission-gallery/
-│           └── ...
-│
-├── backend/                      # 백엔드 서비스
-│   └── lottomate/
-│       └── functions/           # Firebase Cloud Functions (TypeScript)
-│
-├── frontend/                     # 웹 프론트엔드
-│   └── lottomate-web/          # React + TypeScript + Vite
-│
-├── build-logic/                  # Gradle Convention Plugins
-│   └── convention/
-│
-├── clients/                      # 앱별 설정 파일 (NDK 암호화 대상)
-│   ├── lottomate/config.json
-│   ├── lunar/config.json
-│   ├── qrscanner/config.json
-│   ├── diding/config.json
-│   └── moduta/config.json
-│
-├── .github/workflows/            # GitHub Actions
-│   ├── deploy-firebase.yml     # Firebase 배포 (수동)
-│   └── build-android.yml       # Android 빌드 (자동)
-│
-├── gradle/libs.versions.toml    # Version Catalog
-├── settings.gradle.kts          # Module 설정
-└── CLAUDE.md                    # Claude Code 가이드
+│   ├── core/              공통 인프라 (fundamental, common, firebase, permissions, lunar)
+│   └── feature/           여러 앱이 공유하는 기능 (qr, lock, social-login, notification-* 등)
+├── build-logic/           Convention Plugin, Guard, NDK 설정 생성기 (별도 Gradle 빌드)
+├── clients/               앱별 클라이언트 설정 (빌드 시 NDK로 암호화되는 값의 출처)
+├── backend/               Firebase Cloud Functions (TypeScript)
+├── functions/             Cloud Functions (JavaScript, 로또·달 이벤트 푸시)
+├── frontend/              React 웹 (방침·약관, 관리자 콘솔)
+└── scripts/               스캐폴딩, 문서 검사, 테스트 집계, Appium E2E, 배포 스크립트
 ```
 
-## 앱 목록
+| 계층 | 모듈 수 | 역할 |
+|------|--------|------|
+| Shared Core - Fundamental | 5 | 필수 인프라 (common, permission 계약, local-notification, alarm, presentation-base) |
+| Shared Core - Permissions | 11 | 권한별 Provider 구현, 의존만 추가하면 활성화 |
+| Shared Core - Common | 29 | network, database, ui, designsystem, admob, deeplink, navigation-base, app-shell 등 |
+| Shared Core - Firebase | 6 | core, auth, crashlytics, firestore, messaging, remote-config |
+| Shared Core - Lunar | 1 | 달 위상 계산 |
+| Shared Feature | 30 | 2개 이상 앱이 쓰는 기능 (api/impl/ui 분리 포함) |
+| 앱 전용 | 앱별 5~15 | Lottomate 15, Lunar 8, Moduta 8, Diding 8, Fxrate 8, QRScanner 5 |
 
-| 앱 | 패키지명 | 버전 | Flavor |
-|----|---------|------|--------|
-| Lottomate | com.yunseong.lottomate | v1.0.0 | dev / prod |
-| LunarPhase | com.yun.lunarphase | v1.3.2 | - |
-| QRScanner | com.yunseong.qring | v1.0.0 | dev / prod |
-| Diding | com.yunseong.diding | v1.0.0 | - |
-| Moduta | com.yunseong.moduta | v1.0.0 | - |
+shared 모듈의 상세는 [shared/core](shared/core.md), [shared/feature](shared/feature.md)를 참고하세요.
 
-## 앱 스크린샷
+## 핵심 설계 요약
 
-### Lottomate
+- 의존 방향 규칙을 빌드가 막음: 역참조, 앱 간 참조, 계층 역전, feature 간 교차 참조는 configure 단계에서 실패
+- 공용 모듈이 앱 전용 구현을 필요로 하면 포트 인터페이스를 두고 각 앱이 구현·바인딩
+- Hilt 멀티바인딩(`@Multibinds` + `@IntoSet`)으로 권한·소셜 로그인·화면 목적지·FCM 핸들러를 의존 추가만으로 등록
+- 화면 모듈은 `convention.feature` 하나로 구성하고 `StateViewModel`/`MviViewModel` 골격 사용
+- API 키 등 런타임 값은 BuildConfig 대신 NDK(XOR + JNI)로 숨김
+- 빌드 전 검증으로 "빌드는 성공하지만 출시 후에야 드러나는" 오류(빈 키, 테스트 광고 ID, 딥링크 스킴 불일치, 서명 누락)를 차단
 
-<p align="center">
-  <img src="screenshots/lottomate/home.png" width="250" alt="홈 화면">
-  <img src="screenshots/lottomate/numbers.png" width="250" alt="번호 관리">
-  <img src="screenshots/lottomate/statistics.png" width="250" alt="통계">
-</p>
+자세한 내용은 [ARCHITECTURE.md](ARCHITECTURE.md)에 있습니다.
 
-> 스크린샷은 추후 업데이트 예정입니다.
+## 문서 목록
 
-### Lunar Phase
+| 문서 | 내용 |
+|------|------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 계층 구조, 의존성 규칙, 주요 아키텍처 패턴, 보안 구조 |
+| [docs/build-and-tooling.md](docs/build-and-tooling.md) | Convention Plugin, Guard, 빌드 커맨드, 테스트 인프라, 문서 계약과 동기화 방식 |
+| [docs/backend-and-web.md](docs/backend-and-web.md) | Cloud Functions, 웹 관리자 콘솔 개요 |
+| [shared/core](shared/core.md) | Shared Core 모듈 문서 |
+| [shared/feature](shared/feature.md) | Shared Feature 모듈 문서 |
+| `apps/<앱>/README.md` | 앱별 구조와 설계 (위 앱 현황 표의 링크) |
 
-<p align="center">
-  <img src="screenshots/lunar/phase.png" width="250" alt="달 위상">
-  <img src="screenshots/lunar/calendar.png" width="250" alt="달력">
-</p>
+## 스크린샷
 
-> 스크린샷은 추후 업데이트 예정입니다.
+스크린샷은 `screenshots/` 폴더에 앱별로 정리합니다.
 
-### QR Scanner
+## 백엔드와 웹
 
-<p align="center">
-  <img src="screenshots/qrscanner/scan.png" width="250" alt="QR 스캔">
-  <img src="screenshots/qrscanner/result.png" width="250" alt="스캔 결과">
-</p>
+- Cloud Functions (Node.js 20, firebase-functions v2, 리전 `asia-northeast3`): 로또 당첨 확인·구매 알림, 달 이벤트 알림, 관리자 API
+- 웹 (React 19, Vite 7, TypeScript): 방침·약관 페이지와 관리자 콘솔(통계, 수동 알림, Remote Config, Secret)
 
-> 스크린샷은 추후 업데이트 예정입니다.
+상세는 [docs/backend-and-web.md](docs/backend-and-web.md)를 참고하세요.
 
-## 기술 스택
+## 이 저장소에 대하여
 
-### Android
-- Kotlin 2.2.10
-- AGP 9.0.1
-- Jetpack Compose (BOM 2025.02.00, Material 3)
-- Hilt 2.56.2
-- Room 2.7.0-alpha12
-- Firebase BOM 34.0.0
-- KSP 2.3.2
-- minSdk: 29, targetSdk: 36, compileSdk: 36, Java: 17
-
-### Backend (Firebase Functions)
-- TypeScript 5.3
-- Node.js 20
-- Firebase Functions v2
-- Firebase Admin SDK
-- Firestore (lottomate-db)
-- Cloud Scheduler (매주 토요일 20:55)
-
-### Frontend (Web)
-- React 19.2
-- TypeScript
-- Vite 7.2
-- React Router
-- Firebase Hosting
-
-## 배포된 서비스
-
-### Firebase Functions
-- **scheduledLottoCheck**: 매주 토요일 20:55 자동 실행
-- **sendLottoCheckNotification**: `https://sendlottochecknotification-t5op6c3wmq-du.a.run.app`
-- **testLottoCheckNotification**: `https://testlottochecknotification-t5op6c3wmq-du.a.run.app`
-
-### Web Hosting
-- **URL**: https://lottomate-ce9f6.web.app
-- **Routes**:
-  - `/` - 홈페이지
-  - `/privacy` - 개인정보처리방침
-  - `/terms` - 이용약관
-  - `/admin/*` - 관리자 페이지
-
-## 개발
-
-### 백엔드 개발
-```bash
-cd backend/lottomate/functions
-npm install
-npm run build        # TypeScript 빌드
-npm run serve        # 로컬 에뮬레이터 실행
-```
-
-### 프론트엔드 개발
-```bash
-cd frontend/lottomate-web
-npm install
-npm run dev          # 개발 서버 실행
-npm run build        # 프로덕션 빌드
-```
-
-### Android 개발
-```bash
-./gradlew :apps:lottomate:build
-./gradlew :apps:lottomate:installDebug
-```
-
-## 모노레포 아키텍처
-
-### 모듈 계층 구조
-```
-apps → shared/feature → shared/core
-```
-
-- **apps**: 앱 구성 및 네비게이션
-- **shared/feature**: 비즈니스 로직 + UI (앱 전용 또는 공유)
-- **shared/core**: 공통 인프라 (네트워크, UI, DB 등)
-
-### 모듈 수
-- Shared Core: 28개
-- Shared Feature: 16개
-- App 전용: 24개
-- **합계: 68개**
-
-### 의존성 규칙
-- apps → shared/feature + shared/core
-- shared/feature → shared/core
-- shared/core → shared/core (신중하게)
-- shared/core → shared/feature (금지)
-- shared/feature → shared/feature (금지, core 추상화 필요)
-
-### Convention Plugins
-- `convention.android.application` - 앱 기본 설정
-- `convention.android.library` - 라이브러리 기본 설정
-- `convention.android.compose` - Compose 설정
-- `convention.android.hilt` - Hilt DI 설정
-- `convention.buildconfig` - BuildConfig 설정
-
-## 보안 아키텍처
-
-API 키·URL·설정값 등을 NDK/JNI로 보호합니다.
-
-- `clients/<app>/config.json` → 빌드 타임에 Python 스크립트 실행
-- XOR 암호화된 C 코드 자동 생성 → NDK로 `.so` 바이너리 컴파일
-- 런타임에 JNI 호출로 복호화 (메모리에서만 평문 존재)
-- BuildConfig에 평문 노출 없음 / `.so` 바이너리 내 평문 없음
-- XOR 키: 필드명 SHA-256 파생 (결정론적, 증분 빌드 안정)
-
-## 환경 설정
-
-API 키와 설정값은 `clients/<앱명>/config.json`에서 관리됩니다.
-빌드 시 자동으로 NDK 바이너리로 암호화됩니다.
-
-Keystore 관련 시크릿만 `local.properties`에 등록합니다:
-- KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
-- FIREBASE_SERVICE_ACCOUNT_FILE (App Distribution용)
-
-## 배포
-
-### Android APK (GitHub Actions)
-수동 트리거:
-```bash
-GitHub Actions → Build Android APK → Run workflow
-```
-
-### Firebase (GitHub Actions)
-수동 트리거:
-```bash
-GitHub Actions → Deploy Firebase → Run workflow
-- 앱 선택: lottomate/qrscanner
-- 배포 대상: all/functions/hosting
-```
-
-### 로컬 배포 (스크립트)
-```bash
-./scripts/deploy-all.sh          # 전체
-./scripts/deploy-backend.sh      # Functions만
-./scripts/deploy-frontend.sh     # Hosting만
-```
-
-## Firebase 설정
-
-- **Project ID**: lottomate-ce9f6
-- **Region**: asia-northeast3 (Seoul)
-- **Firestore Database**: lottomate-db
-- **FCM Topic**: lotto_check
-
-## 주요 기능
-
-### 백엔드
-- 매주 토요일 20:55 자동 로또 당첨 번호 조회
-- Firestore에 최신 회차 저장
-- FCM 푸시 알림 발송
-- 수동 알림 발송 API
-
-### 웹 관리자
-- 실시간 통계 대시보드
-- 테스트 알림 발송
-- 수동 알림 발송
-
-### 모바일 앱
-- 로또 번호 저장 및 관리
-- 당첨 결과 푸시 알림
-- 당첨 번호 확인
-
-## 로그 확인
-
-```bash
-firebase functions:log
-```
-
-## 개발 가이드
-
-### 새 모듈 추가
-1. 모듈 위치 결정: apps/shared/feature/shared/core
-2. `settings.gradle.kts`에 모듈 추가
-3. `build.gradle.kts` 생성 (Convention Plugin 사용)
-4. 필요한 의존성 추가 (`libs.versions.toml` 사용)
-
-### 의존성 추가
-1. `gradle/libs.versions.toml`에 버전 추가
-2. 모듈의 `build.gradle.kts`에서 `libs.*` 사용
-3. 하드코딩된 버전 금지
-
-### 커밋 컨벤션
-```
-feat(camera): 카메라 모듈 xxx 기능 추가
-
- - 권한 체크 및 요청 기능 추가
- - 촬영 후 미리보기 화면 추가
-```
-
-- 타입/범위는 영문 (feat, fix, refactor, docs, build, test, perf, chore)
-- 제목과 본문은 한글
-- 본문은 불릿 포인트 (` - `) 사용
-
-## 주의사항
-
-### Android
-- minSdk: 29, targetSdk: 36, compileSdk: 36, Java: 17
-- Kotlin 2.2.10, AGP 9.0.1
-- 모든 버전은 `libs.versions.toml`에서 관리
-
-### Firebase
-- Node.js 20 런타임 사용
-- 스케줄: 매주 토요일 20:55 KST
-- 모든 Functions는 asia-northeast3 리전에 배포
-
-### GitHub Actions
-- Firebase 배포는 수동 실행만 허용
-- Android APK 빌드는 자동/수동 모두 가능
+소스 저장소의 `AGENTS.md`와 `docs/`를 기준으로 구조 문서를 추려 공개용으로 정리한 것입니다.
+키, 서명 정보, 내부 주소 같은 민감 값은 싣지 않습니다.
